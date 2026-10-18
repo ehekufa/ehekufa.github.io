@@ -6,15 +6,13 @@
     <title>Кубок Кликер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; overflow: hidden; }
-        #cup { font-size: 140px; cursor: pointer; transition: transform 0.1s; filter: drop-shadow(0 0 20px rgba(241, 196, 15, 0.4)); }
+        body { background: #1a1a2e; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; }
+        #cup { font-size: 140px; cursor: pointer; transition: transform 0.1s; }
         #cup:active { transform: scale(0.85); }
-        .progress { width: 80%; max-width: 300px; height: 16px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 30px; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); }
-        .fill { height: 100%; background: linear-gradient(90deg, #f1c40f, #f39c12); width: 0%; transition: width 0.1s; border-radius: 10px; }
-        #counter { font-size: 20px; margin-top: 15px; font-weight: bold; color: #a0a0a0; }
-        .btn { margin-top: 30px; padding: 15px 40px; background: linear-gradient(90deg, #2ea6ff, #0078ff); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 120, 255, 0.4); }
-        .btn:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); box-shadow: none; cursor: not-allowed; }
-        .btn:not(:disabled):active { transform: scale(0.95); }
+        .progress { width: 80%; height: 16px; background: #333; border-radius: 10px; margin-top: 30px; }
+        .fill { height: 100%; background: gold; width: 0%; border-radius: 10px; transition: width 0.1s; }
+        .btn { margin-top: 30px; padding: 15px 40px; background: #2ea6ff; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .btn:disabled { background: #555; color: #888; }
     </style>
 </head>
 <body>
@@ -27,7 +25,6 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); 
-        tg.ready();
 
         let clicks = 0;
         const TARGET = 450;
@@ -41,27 +38,21 @@
                 clicks++;
                 counter.innerText = `${clicks} / ${TARGET}`;
                 progress.style.width = `${(clicks / TARGET) * 100}%`;
-                
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-                
-                if (clicks === TARGET) {
-                    withdrawBtn.disabled = false;
-                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                }
+                if (clicks === TARGET) { withdrawBtn.disabled = false; }
             }
         });
 
         withdrawBtn.addEventListener('click', () => {
-            withdrawBtn.disabled = true; 
+            withdrawBtn.innerText = "Отправка...";
+            withdrawBtn.disabled = true;
             
-            // Чистая отправка без задержек и окон
-            tg.sendData(JSON.stringify({
-                action: "withdraw",
-                amount: 1
-            }));
-            
-            // Принудительно закрываем игру
-            tg.close();
+            // ОТПРАВЛЯЕМ И СРАЗУ ЗАКРЫВАЕМ
+            try {
+                tg.sendData(JSON.stringify({ action: "withdraw", amount: 1 }));
+                tg.close();
+            } catch (e) {
+                withdrawBtn.innerText = "ОШИБКА: " + e.message;
+            }
         });
     </script>
 </body>
