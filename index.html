@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Кубок Кликер</title>
-    <!-- Подключаем Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap');
+        
         body {
-            background-color: #1a1a1a;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: white;
-            font-family: sans-serif;
+            font-family: 'Montserrat', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -18,50 +19,89 @@
             height: 100vh;
             margin: 0;
             user-select: none;
-        }
-        #cup {
-            font-size: 120px;
-            cursor: pointer;
-            transition: transform 0.05s;
-        }
-        #cup:active {
-            transform: scale(0.9);
-        }
-        .progress-bar {
-            width: 80%;
-            height: 20px;
-            background: #333;
-            border-radius: 10px;
-            margin-top: 20px;
             overflow: hidden;
         }
+
+        .title {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: -webkit-linear-gradient(#f1c40f, #e67e22);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #cup {
+            font-size: 140px;
+            cursor: pointer;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 0 20px rgba(241, 196, 15, 0.4));
+        }
+
+        #cup:active {
+            transform: scale(0.85);
+        }
+
+        .progress-container {
+            width: 80%;
+            max-width: 300px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 30px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+        }
+
         .progress-fill {
             height: 100%;
-            background: gold;
+            background: linear-gradient(90deg, #f1c40f, #f39c12);
             width: 0%;
-            transition: width 0.1s;
+            transition: width 0.1s ease-out;
+            border-radius: 10px;
         }
+
+        #counter {
+            font-size: 20px;
+            margin-top: 15px;
+            font-weight: 600;
+            color: #a0a0a0;
+        }
+
         .btn {
-            margin-top: 30px;
-            padding: 12px 24px;
-            background: #2ea6ff;
+            margin-top: 40px;
+            padding: 15px 40px;
+            background: linear-gradient(90deg, #2ea6ff, #0078ff);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 12px;
+            font-size: 18px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
             cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 120, 255, 0.4);
         }
+
         .btn:disabled {
-            background: #555;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.3);
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn:not(:disabled):active {
+            transform: scale(0.95);
         }
     </style>
 </head>
 <body>
-    <h2>Собери 450 кликов</h2>
+    <div class="title">Собери 450 кликов</div>
     <div id="cup">🏆</div>
     
-    <div class="progress-bar">
+    <div class="progress-container">
         <div class="progress-fill" id="progress"></div>
     </div>
     <p id="counter">0 / 450</p>
@@ -69,9 +109,9 @@
     <button class="btn" id="withdrawBtn" disabled>Забрать кубок</button>
 
     <script>
-        // Инициализация Telegram Web App
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Разворачиваем на весь экран
+        tg.expand(); 
+        tg.enableClosingConfirmation(); // Защита от случайного закрытия
 
         let clicks = 0;
         const TARGET = 450;
@@ -80,43 +120,33 @@
         const progress = document.getElementById('progress');
         const withdrawBtn = document.getElementById('withdrawBtn');
 
-        // Обработка клика по кубку
         cup.addEventListener('click', () => {
             if (clicks < TARGET) {
                 clicks++;
                 counter.innerText = `${clicks} / ${TARGET}`;
                 progress.style.width = `${(clicks / TARGET) * 100}%`;
 
-                // Вибрация для тактильного отклика (работает в Telegram)
                 if (tg.HapticFeedback) {
                     tg.HapticFeedback.impactOccurred('light');
                 }
 
-                // Активируем кнопку при достижении цели
                 if (clicks === TARGET) {
                     withdrawBtn.disabled = false;
-                    tg.HapticFeedback.notificationOccurred('success');
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                 }
             }
         });
 
-        // Обработка вывода кубка
         withdrawBtn.addEventListener('click', () => {
-            // Отправляем данные в бота (на ваш сервер)
-            const userData = {
-                user_id: tg.initDataUnsafe.user.id,
-                clicks: clicks
-            };
-            
-            // Отправка события в Telegram (обрабатывается ботом)
+            // Отправляем данные боту (бот начислит 1 кубок)
             tg.sendData(JSON.stringify({
                 action: "withdraw",
-                payload: userData
+                amount: 1
             }));
             
-            // Закрываем мини-приложение после запроса
-            tg.close();
+            // В Telegram Mini Apps после sendData приложение закрывается автоматически, 
+            // чтобы юзер мог открыть его снова из бота и фармить дальше.
         });
     </script>
 </body>
-  </html>
+</html>
