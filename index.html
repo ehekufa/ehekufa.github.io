@@ -7,13 +7,16 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { background: #1a1a2e; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; }
-        #nickDisplay { font-size: 18px; color: #a0a0a0; margin-bottom: 20px; }
+        #nickDisplay { font-size: 18px; color: #a0a0a0; margin-bottom: 20px; text-align: center; }
         #cup { font-size: 140px; cursor: pointer; transition: transform 0.1s; }
         #cup:active { transform: scale(0.85); }
         .progress { width: 80%; height: 16px; background: #333; border-radius: 10px; margin-top: 30px; }
         .fill { height: 100%; background: gold; width: 0%; border-radius: 10px; transition: width 0.1s; }
         .btn { margin-top: 30px; padding: 15px 40px; background: #2ea6ff; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
         .btn:disabled { background: #555; color: #888; }
+        .error { color: #ff4444; font-weight: bold; }
+        /* Стиль для версии в углу */
+        #versionDisplay { position: absolute; bottom: 10px; font-size: 12px; color: #666; }
     </style>
 </head>
 <body>
@@ -24,20 +27,26 @@
     <p id="counter">0 / 450</p>
     <button class="btn" id="withdrawBtn" disabled>Забрать кубок</button>
 
+    <!-- Вот та самая галочка версии -->
+    <div id="versionDisplay">Версия HTML: 1.0</div>
+
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); 
-        tg.ready(); // ОБЯЗАТЕЛЬНО для корректной работы
+        tg.ready(); 
 
         const urlParams = new URLSearchParams(window.location.search);
         const playerNick = urlParams.get('nick');
         const nickDisplay = document.getElementById('nickDisplay');
         const withdrawBtn = document.getElementById('withdrawBtn');
 
-        if (playerNick) {
+        if (!tg.initData) {
+            nickDisplay.innerHTML = `<span class="error">ОШИБКА!</span><br>Игра открыта не через кнопку в сообщении. Telegram блокирует данные.`;
+            withdrawBtn.disabled = true;
+        } else if (playerNick) {
             nickDisplay.innerHTML = `🎮 Игрок: <b>${playerNick}</b>`;
         } else {
-            nickDisplay.innerHTML = `<span style="color:red">Ошибка: нет ника!</span>`;
+            nickDisplay.innerHTML = `<span class="error">Ошибка: бот не передал ник!</span>`;
             withdrawBtn.disabled = true;
         }
 
@@ -46,7 +55,7 @@
         const progress = document.getElementById('progress');
 
         cup.addEventListener('click', () => {
-            if (!playerNick) return;
+            if (!playerNick || !tg.initData) return;
             if (clicks < TARGET) {
                 clicks++; counter.innerText = `${clicks} / ${TARGET}`;
                 progress.style.width = `${(clicks / TARGET) * 100}%`;
@@ -55,18 +64,13 @@
         });
 
         withdrawBtn.addEventListener('click', () => {
-            if (!playerNick) return;
+            if (!playerNick || !tg.initData) return;
+            
             withdrawBtn.disabled = true; 
-            withdrawBtn.innerText = "Отправка в бот...";
+            withdrawBtn.innerText = "Передача...";
             
-            // Отправляем данные
+            // НИКАКИХ setTimeout и tg.close()! sendData сам всё сделает.
             tg.sendData(JSON.stringify({ action: "withdraw", amount: 1 }));
-            
-            // Показываем сообщение, что данные ушли
-            alert("Данные отправлены боту! Окно сейчас закроется.");
-            
-            // Закрываем окно с небольшой задержкой, чтобы данные точно ушли
-            setTimeout(() => { tg.close(); }, 500);
         });
     </script>
 </body>
