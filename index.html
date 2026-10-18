@@ -54,15 +54,14 @@
         withdrawBtn.addEventListener('click', () => {
             withdrawBtn.disabled = true; 
             
-            try {
-                tg.sendData(JSON.stringify({
-                    action: "withdraw",
-                    amount: 1
-                }));
-                alert("Успех! Telegram принял данные.");
-            } catch (e) {
-                alert("Ошибка Telegram: " + e.message);
-            }
+            // Чистая отправка без задержек и окон
+            tg.sendData(JSON.stringify({
+                action: "withdraw",
+                amount: 1
+            }));
+            
+            // Принудительно закрываем игру
+            tg.close();
         });
     </script>
 </body>
