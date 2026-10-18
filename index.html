@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Кубок Кликер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         body { background: #1a1a2e; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; }
         #nickDisplay { font-size: 18px; color: #a0a0a0; margin-bottom: 20px; }
@@ -20,9 +17,7 @@
     </style>
 </head>
 <body>
-    <!-- Сюда выводится ник -->
     <div id="nickDisplay">Загрузка...</div>
-
     <h2>Собери 450 кликов</h2>
     <div id="cup">🏆</div>
     <div class="progress"><div class="fill" id="progress"></div></div>
@@ -30,23 +25,6 @@
     <button class="btn" id="withdrawBtn" disabled>Забрать кубок</button>
 
     <script>
-        const ADMIN_EMAIL = "dimasi4ek229@cb4.game";
-        // ⚠️ ВСТАВЬ ПАРОЛЬ ОТ АДМИНКИ ⚠️
-        const ADMIN_PASS = "ТВОЙ_ПАРОЛЬ_АДМИНА";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDJEqopxP5EqEoxP_ehO3jFXbNztu3DgVs",
-            authDomain: "cubicbattleserver-19ae2.firebaseapp.com",
-            databaseURL: "https://cubicbattleserver-19ae2-default-rtdb.firebaseio.com",
-            projectId: "cubicbattleserver-19ae2",
-            storageBucket: "cubicbattleserver-19ae2.firebasestorage.app",
-            messagingSenderId: "845296353238",
-            appId: "1:845296353238:web:7b3c273c5c019cf6162e77"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        
-        // Читаем ник из ссылки (?nick=DerKa)
         const urlParams = new URLSearchParams(window.location.search);
         const playerNick = urlParams.get('nick');
         const nickDisplay = document.getElementById('nickDisplay');
@@ -55,7 +33,7 @@
         if (playerNick) {
             nickDisplay.innerHTML = `🎮 Игрок: <b>${playerNick}</b>`;
         } else {
-            nickDisplay.innerHTML = `<span style="color:red">Ошибка: Бот не передал ник!</span>`;
+            nickDisplay.innerHTML = `<span style="color:red">Ошибка: нет ника!</span>`;
             withdrawBtn.disabled = true;
         }
 
@@ -76,17 +54,13 @@
         });
 
         withdrawBtn.addEventListener('click', () => {
-            if (!playerNick) { alert("Нет ника!"); return; }
-            withdrawBtn.disabled = true; withdrawBtn.innerText = "Запись в игру...";
-
-            firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL, ADMIN_PASS)
-            .then(() => {
-                const dbRef = firebase.database().ref('users/' + playerNick + '/cups');
-                dbRef.transaction((currentCups) => { return (currentCups || 0) + 1; })
-                .then(() => { tg.close(); })
-                .catch((err) => { alert("Ошибка БД: " + err.message); withdrawBtn.disabled = false; withdrawBtn.innerText = "Забрать кубок"; });
-            })
-            .catch((err) => { alert("Ошибка входа админа: " + err.message); withdrawBtn.disabled = false; withdrawBtn.innerText = "Забрать кубок"; });
+            if (!playerNick) return;
+            withdrawBtn.disabled = true; 
+            withdrawBtn.innerText = "Отправка...";
+            
+            // Отправляем сигнал боту
+            tg.sendData(JSON.stringify({ action: "withdraw", amount: 1 }));
+            tg.close();
         });
     </script>
 </body>
