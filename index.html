@@ -6,13 +6,16 @@
     <title>Кубок Кликер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; }
-        #cup { font-size: 140px; cursor: pointer; transition: transform 0.1s; }
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; overflow: hidden; }
+        #cup { font-size: 140px; cursor: pointer; transition: transform 0.1s; filter: drop-shadow(0 0 20px rgba(241, 196, 15, 0.4)); }
         #cup:active { transform: scale(0.85); }
-        .progress { width: 80%; height: 16px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 30px; overflow: hidden; }
-        .fill { height: 100%; background: gold; width: 0%; transition: width 0.1s; }
-        .btn { margin-top: 30px; padding: 15px 40px; background: #2ea6ff; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .btn:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); }
+        .progress { width: 80%; max-width: 300px; height: 16px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 30px; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); }
+        .fill { height: 100%; background: linear-gradient(90deg, #f1c40f, #f39c12); width: 0%; transition: width 0.1s; border-radius: 10px; }
+        #counter { font-size: 20px; margin-top: 15px; font-weight: bold; color: #a0a0a0; }
+        .btn { margin-top: 30px; padding: 15px 40px; background: linear-gradient(90deg, #2ea6ff, #0078ff); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 120, 255, 0.4); }
+        .btn:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); box-shadow: none; cursor: not-allowed; }
+        .btn:not(:disabled):active { transform: scale(0.95); }
+        #successMsg { color: #2ecc71; font-weight: bold; margin-top: 15px; opacity: 0; transition: opacity 0.3s; height: 20px; }
     </style>
 </head>
 <body>
@@ -21,6 +24,7 @@
     <div class="progress"><div class="fill" id="progress"></div></div>
     <p id="counter">0 / 450</p>
     <button class="btn" id="withdrawBtn" disabled>Забрать кубок</button>
+    <div id="successMsg">Кубок отправлен в бот!</div>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -32,13 +36,16 @@
         const counter = document.getElementById('counter');
         const progress = document.getElementById('progress');
         const withdrawBtn = document.getElementById('withdrawBtn');
+        const successMsg = document.getElementById('successMsg');
 
         cup.addEventListener('click', () => {
             if (clicks < TARGET) {
                 clicks++;
                 counter.innerText = `${clicks} / ${TARGET}`;
                 progress.style.width = `${(clicks / TARGET) * 100}%`;
+                
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                
                 if (clicks === TARGET) {
                     withdrawBtn.disabled = false;
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -47,11 +54,29 @@
         });
 
         withdrawBtn.addEventListener('click', () => {
+            // Блокируем кнопку, чтобы не нажать дважды
+            withdrawBtn.disabled = true; 
+            
+            // Отправляем данные боту
             tg.sendData(JSON.stringify({
                 action: "withdraw",
                 amount: 1
             }));
-            // Убрали tg.close(). Телеграм сам закроет окно и передаст данные!
+
+            // Мгновенно обнуляем всё на экране
+            clicks = 0;
+            counter.innerText = `0 / ${TARGET}`;
+            progress.style.width = `0%`;
+            
+            // Показываем сообщение об успехе
+            successMsg.style.opacity = '1';
+            setTimeout(() => { successMsg.style.opacity = '0'; }, 3000);
+
+            // Если Telegram по какой-то причине не закрыл игру, 
+            // даем возможность играть дальше через 1 секунду
+            setTimeout(() => {
+                withdrawBtn.disabled = true;
+            }, 1000);
         });
     </script>
 </body>
