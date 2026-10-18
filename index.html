@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Кубик Кликер</title>
+    <title>Кубок Кликер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { background: #1a1a2e; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; }
         #nickDisplay { font-size: 18px; color: #a0a0a0; margin-bottom: 20px; }
-        #cup { font-size: 140px; cursor: pointer; transition: transform 0.1s; filter: drop-shadow(0 0 20px rgba(241, 196, 15, 0.4)); }
+        #cup { font-size: 140px; cursor: pointer; transition: transform 0.1s; }
         #cup:active { transform: scale(0.85); }
-        .progress { width: 80%; max-width: 300px; height: 16px; background: #333; border-radius: 10px; margin-top: 30px; }
+        .progress { width: 80%; height: 16px; background: #333; border-radius: 10px; margin-top: 30px; }
         .fill { height: 100%; background: gold; width: 0%; border-radius: 10px; transition: width 0.1s; }
         .btn { margin-top: 30px; padding: 15px 40px; background: #2ea6ff; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
         .btn:disabled { background: #555; color: #888; }
@@ -25,6 +25,10 @@
     <button class="btn" id="withdrawBtn" disabled>Забрать кубок</button>
 
     <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); 
+        tg.ready(); // ОБЯЗАТЕЛЬНО для корректной работы
+
         const urlParams = new URLSearchParams(window.location.search);
         const playerNick = urlParams.get('nick');
         const nickDisplay = document.getElementById('nickDisplay');
@@ -36,9 +40,6 @@
             nickDisplay.innerHTML = `<span style="color:red">Ошибка: нет ника!</span>`;
             withdrawBtn.disabled = true;
         }
-
-        const tg = window.Telegram.WebApp;
-        tg.expand(); 
 
         let clicks = 0; const TARGET = 450;
         const cup = document.getElementById('cup'); const counter = document.getElementById('counter');
@@ -56,11 +57,16 @@
         withdrawBtn.addEventListener('click', () => {
             if (!playerNick) return;
             withdrawBtn.disabled = true; 
-            withdrawBtn.innerText = "Отправка...";
+            withdrawBtn.innerText = "Отправка в бот...";
             
-            // Отправляем сигнал боту
+            // Отправляем данные
             tg.sendData(JSON.stringify({ action: "withdraw", amount: 1 }));
-            tg.close();
+            
+            // Показываем сообщение, что данные ушли
+            alert("Данные отправлены боту! Окно сейчас закроется.");
+            
+            // Закрываем окно с небольшой задержкой, чтобы данные точно ушли
+            setTimeout(() => { tg.close(); }, 500);
         });
     </script>
 </body>
