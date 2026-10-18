@@ -27,7 +27,7 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); 
-        tg.ready(); // Обязательно для корректной работы
+        tg.ready();
 
         let clicks = 0;
         const TARGET = 450;
@@ -54,12 +54,9 @@
         withdrawBtn.addEventListener('click', () => {
             withdrawBtn.disabled = true; 
             
-            // Сбрасываем визуал (хотя окно сразу закроется)
-            clicks = 0;
-            counter.innerText = `0 / ${TARGET}`;
-            progress.style.width = `0%`;
+            // ПРИНУДИТЕЛЬНОЕ ОКНО (чтобы проверить, обновился ли HTML)
+            alert("Кнопка нажата! Отправляю данные боту...");
 
-            // ОТПРАВЛЯЕМ СРАЗУ, БЕЗ ЗАДЕРЖЕК (setTimeout)
             tg.sendData(JSON.stringify({
                 action: "withdraw",
                 amount: 1
