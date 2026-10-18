@@ -54,29 +54,24 @@
         });
 
         withdrawBtn.addEventListener('click', () => {
-            // Блокируем кнопку, чтобы не нажать дважды
             withdrawBtn.disabled = true; 
             
-            // Отправляем данные боту
-            tg.sendData(JSON.stringify({
-                action: "withdraw",
-                amount: 1
-            }));
-
-            // Мгновенно обнуляем всё на экране
+            // 1. Мгновенно обнуляем всё на экране
             clicks = 0;
             counter.innerText = `0 / ${TARGET}`;
             progress.style.width = `0%`;
             
-            // Показываем сообщение об успехе
+            // 2. Показываем сообщение, что кубок улетел
             successMsg.style.opacity = '1';
-            setTimeout(() => { successMsg.style.opacity = '0'; }, 3000);
 
-            // Если Telegram по какой-то причине не закрыл игру, 
-            // даем возможность играть дальше через 1 секунду
+            // 3. Ждем 300 миллисекунд (чтобы человек увидел обнуление) и отправляем данные боту
             setTimeout(() => {
-                withdrawBtn.disabled = true;
-            }, 1000);
+                tg.sendData(JSON.stringify({
+                    action: "withdraw",
+                    amount: 1
+                }));
+                // После sendData Telegram сам закроет окно
+            }, 300);
         });
     </script>
 </body>
