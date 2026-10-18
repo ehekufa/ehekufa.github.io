@@ -15,6 +15,7 @@
         .btn { margin-top: 30px; padding: 15px 40px; background: #2ea6ff; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
         .btn:disabled { background: #555; color: #888; }
         .error { color: #ff4444; font-weight: bold; }
+        .warning { color: #ffa500; font-size: 12px; }
         #versionDisplay { position: absolute; bottom: 10px; font-size: 12px; color: #666; }
     </style>
 </head>
@@ -26,7 +27,7 @@
     <p id="counter">0 / 450</p>
     <button class="btn" id="withdrawBtn" disabled>Забрать кубок</button>
 
-    <div id="versionDisplay">Версия HTML: 6.0</div>
+    <div id="versionDisplay">Версия HTML: 7.0</div>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -38,13 +39,14 @@
         const nickDisplay = document.getElementById('nickDisplay');
         const withdrawBtn = document.getElementById('withdrawBtn');
 
+        // Мягкая проверка: если initData пуст, просто предупреждаем
         if (!tg.initData) {
-            nickDisplay.innerHTML = `<span class="error">ОШИБКА!</span><br>Игра открыта не через кнопку в сообщении.`;
+            nickDisplay.innerHTML = `<span class="error">Внимание!</span><br><span class="warning">Игра открыта не через кнопку в сообщении. Передача данных может не сработать.</span>`;
             withdrawBtn.disabled = true;
         } else if (playerNick) {
             nickDisplay.innerHTML = `🎮 Игрок: <b>${playerNick}</b>`;
         } else {
-            nickDisplay.innerHTML = `<span class="error">Ошибка: нет ника!</span>`;
+            nickDisplay.innerHTML = `<span class="error">Ошибка: бот не передал ник!</span>`;
             withdrawBtn.disabled = true;
         }
 
@@ -67,7 +69,7 @@
             withdrawBtn.disabled = true; 
             withdrawBtn.innerText = "Отправка...";
             
-            // Отправляем данные. Теперь это сработает, т.к. кнопка Reply.
+            // Отправляем данные боту (без задержек и закрытий)
             tg.sendData(JSON.stringify({ action: "withdraw", amount: 1 }));
         });
     </script>
