@@ -5,14 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Кубок Кликер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
-        body { background: #1a1a2e; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; }
-        #cup { font-size: 140px; cursor: pointer; transition: transform 0.1s; }
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; overflow: hidden; }
+        #cup { font-size: 140px; cursor: pointer; transition: transform 0.1s; filter: drop-shadow(0 0 20px rgba(241, 196, 15, 0.4)); }
         #cup:active { transform: scale(0.85); }
-        .progress { width: 80%; height: 16px; background: #333; border-radius: 10px; margin-top: 30px; }
-        .fill { height: 100%; background: gold; width: 0%; border-radius: 10px; transition: width 0.1s; }
-        .btn { margin-top: 30px; padding: 15px 40px; background: #2ea6ff; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .btn:disabled { background: #555; color: #888; }
+        .progress { width: 80%; max-width: 300px; height: 16px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 30px; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); }
+        .fill { height: 100%; background: linear-gradient(90deg, #f1c40f, #f39c12); width: 0%; transition: width 0.1s; border-radius: 10px; }
+        #counter { font-size: 20px; margin-top: 15px; font-weight: bold; color: #a0a0a0; }
+        .btn { margin-top: 30px; padding: 15px 40px; background: linear-gradient(90deg, #2ea6ff, #0078ff); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0, 120, 255, 0.4); }
+        .btn:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); box-shadow: none; cursor: not-allowed; }
+        .btn:not(:disabled):active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -23,8 +31,26 @@
     <button class="btn" id="withdrawBtn" disabled>Забрать кубок</button>
 
     <script>
+        // === НАСТРОЙКИ FIREBASE (ВСТАВЬ СВОИ ДАННЫЕ) ===
+        const firebaseConfig = {
+            apiKey: "ТВОЙ_WEB_API_KEY", // (начинается на AIza...)
+            databaseURL: "https://cubicbattleserver-19ae2-default-rtdb.firebaseio.com"
+        };
+        
+        // Аккаунт, от имени которого сайт будет писать в базу
+        const ADMIN_EMAIL = "dimasi4ek229@cb4.game";
+        const ADMIN_PASS = "ТВОЙ_ПАРОЛЬ_АДМИНА";
+
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Получаем ник из ссылки (например, ?nick=DerKa)
+        const urlParams = new URLSearchParams(window.location.search);
+        const playerNick = urlParams.get('nick');
+
         const tg = window.Telegram.WebApp;
         tg.expand(); 
+        tg.ready();
 
         let clicks = 0;
         const TARGET = 450;
@@ -38,21 +64,51 @@
                 clicks++;
                 counter.innerText = `${clicks} / ${TARGET}`;
                 progress.style.width = `${(clicks / TARGET) * 100}%`;
-                if (clicks === TARGET) { withdrawBtn.disabled = false; }
+                
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                
+                if (clicks === TARGET) {
+                    withdrawBtn.disabled = false;
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                }
             }
         });
 
         withdrawBtn.addEventListener('click', () => {
-            withdrawBtn.innerText = "Отправка...";
-            withdrawBtn.disabled = true;
-            
-            // ОТПРАВЛЯЕМ И СРАЗУ ЗАКРЫВАЕМ
-            try {
-                tg.sendData(JSON.stringify({ action: "withdraw", amount: 1 }));
-                tg.close();
-            } catch (e) {
-                withdrawBtn.innerText = "ОШИБКА: " + e.message;
+            if (!playerNick) {
+                alert("Ошибка: Бот не передал твой ник!");
+                return;
             }
+
+            withdrawBtn.disabled = true;
+            withdrawBtn.innerText = "Запись в игру...";
+
+            // Логинимся и пишем в базу
+            firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL, ADMIN_PASS)
+            .then((userCredential) => {
+                // Успешный вход, теперь берем текущие кубки и прибавляем 1
+                const dbRef = firebase.database().ref('users/' + playerNick + '/cups');
+                
+                dbRef.transaction((currentCups) => {
+                    // Если кубков нет, считаем что 0. Иначе прибавляем 1.
+                    return (currentCups || 0) + 1;
+                }, (error, committed, snapshot) => {
+                    if (error) {
+                        alert("Ошибка базы данных: " + error.message);
+                        withdrawBtn.disabled = false;
+                        withdrawBtn.innerText = "Забрать кубок";
+                    } else {
+                        // Успех! Закрываем окно
+                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        tg.close();
+                    }
+                });
+            })
+            .catch((error) => {
+                alert("Ошибка входа: " + error.message);
+                withdrawBtn.disabled = false;
+                withdrawBtn.innerText = "Забрать кубок";
+            });
         });
     </script>
 </body>
