@@ -1,73 +1,270 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Кубок Кликер</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { background: #1a1a2e; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; user-select: none; }
-        #nickDisplay { font-size: 18px; color: #a0a0a0; margin-bottom: 20px; text-align: center; }
-        #cup { font-size: 140px; cursor: pointer; transition: transform 0.1s; }
-        #cup:active { transform: scale(0.85); }
-        .progress { width: 80%; max-width: 300px; height: 16px; background: #333; border-radius: 10px; margin-top: 30px; }
-        .fill { height: 100%; background: gold; width: 0%; border-radius: 10px; transition: width 0.1s; }
-        .btn { margin-top: 30px; padding: 15px 40px; background: #2ea6ff; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .btn:disabled { background: #555; color: #888; }
-        .error { color: #ff4444; font-weight: bold; }
-        #versionDisplay { position: absolute; bottom: 10px; font-size: 12px; color: #666; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Кубик Кликер</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* Подключаем шрифт из репозитория через надежный CDN */
+  @font-face {
+    font-family: 'Comic Relief';
+    src: url('https://cdn.jsdelivr.net/gh/andreibioazum-cell/C-Larp@main/assets/fonts/ComicRelief-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  :root {
+    --bg-gradient: linear-gradient(180deg, #2b0b2e 0%, #150517 100%);
+    --btn-gradient: linear-gradient(180deg, #e8437b 0%, #a91c4f 100%);
+    --btn-active: linear-gradient(180deg, #c93467 0%, #82123a 100%);
+    --text-main: #ffffff;
+    --text-dim: #d1c4d6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Comic Relief', 'Montserrat', sans-serif;
+    background: var(--bg-gradient);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 40px 20px;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+  }
+
+  /* Верхняя часть (Приветствие) */
+  .header {
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .greeting {
+    font-size: 16px;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+
+  /* Центральная часть */
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 300px;
+    gap: 15px;
+    margin-top: -30px;
+  }
+
+  h1 {
+    font-size: 36px;
+    text-align: center;
+    margin-bottom: 20px;
+    text-shadow: 0 0 15px rgba(232, 67, 123, 0.5);
+    letter-spacing: 1px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    /* Обрезанные (скругленные) углы, как на скрине */
+    border-radius: 16px; 
+    border: none;
+    background: var(--btn-gradient);
+    color: white;
+    font-family: inherit;
+    font-size: 24px;
+    cursor: pointer;
+    /* Тень как у объемных кнопок в игре */
+    box-shadow: 0 6px 0 #5c0b29, 0 10px 15px rgba(0,0,0,0.5);
+    transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Эффект нажатия (кнопка падает вниз) */
+  .btn:active:not(:disabled) {
+    transform: translateY(4px);
+    background: var(--btn-active);
+    box-shadow: 0 2px 0 #5c0b29, 0 4px 8px rgba(0,0,0,0.5);
+  }
+
+  .btn:disabled {
+    background: #3a1c3d;
+    color: #7b6480;
+    box-shadow: 0 6px 0 #1f0c21, 0 10px 15px rgba(0,0,0,0.5);
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Нижняя часть (Прогресс и счетчик) */
+  .footer {
+    text-align: center;
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 10px;
+  }
+
+  .progress-container {
+    width: 100%;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background: #e8437b;
+    width: 0%;
+    border-radius: 5px;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 10px rgba(232, 67, 123, 0.8);
+  }
+
+  .stats {
+    font-size: 18px;
+    color: var(--text-dim);
+  }
+  
+  .stats span {
+    color: #fff;
+    font-weight: bold;
+  }
+
+  .error-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ff4d4d;
+    font-size: 20px;
+    text-align: center;
+    background: rgba(0,0,0,0.8);
+    padding: 15px;
+    border-radius: 12px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  @keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+  }
+  .shake { animation: shake 0.3s ease-in-out; }
+</style>
 </head>
 <body>
-    <div id="nickDisplay">Загрузка...</div>
-    <h2>Собери 450 кликов</h2>
-    <div id="cup">🏆</div>
-    <div class="progress"><div class="fill" id="progress"></div></div>
-    <p id="counter">0 / 450</p>
-    <button class="btn" id="withdrawBtn" disabled>Забрать кубок</button>
 
-    <div id="versionDisplay">Версия HTML: 8.0</div>
+  <div class="header">
+    <div class="greeting" id="greeting">Привет, Игрок</div>
+  </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand(); 
-        tg.ready(); 
+  <div class="main-content">
+    <h1>Кубик Кликер</h1>
+    <button class="btn" id="clickBtn">КЛИКНУТЬ</button>
+    <button class="btn" id="withdrawBtn" disabled>ЗАБРАТЬ</button>
+  </div>
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const playerNick = urlParams.get('nick');
-        const nickDisplay = document.getElementById('nickDisplay');
-        const withdrawBtn = document.getElementById('withdrawBtn');
+  <div class="footer">
+    <div class="progress-container">
+      <div class="progress-fill" id="progress"></div>
+    </div>
+    <div class="stats">Клики: <span id="score-count">0</span> / 50</div>
+  </div>
 
-        // Без жесткой блокировки initData
-        if (playerNick) {
-            nickDisplay.innerHTML = `🎮 Игрок: <b>${playerNick}</b>`;
-        } else {
-            nickDisplay.innerHTML = `<span class="error">Ошибка: бот не передал ник!</span>`;
-            withdrawBtn.disabled = true;
-        }
+  <div class="error-text" id="errorMsg">⚠️ Не так быстро!</div>
 
-        let clicks = 0; const TARGET = 450;
-        const cup = document.getElementById('cup'); const counter = document.getElementById('counter');
-        const progress = document.getElementById('progress');
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand(); 
+  tg.ready(); 
 
-        cup.addEventListener('click', () => {
-            if (!playerNick) return;
-            if (clicks < TARGET) {
-                clicks++; counter.innerText = `${clicks} / ${TARGET}`;
-                progress.style.width = `${(clicks / TARGET) * 100}%`;
-                if (clicks === TARGET) { withdrawBtn.disabled = false; }
-            }
-        });
+  const urlParams = new URLSearchParams(window.location.search);
+  const playerNick = urlParams.get('nick');
+  
+  const greetingEl = document.getElementById('greeting');
+  const clickBtn = document.getElementById('clickBtn');
+  const withdrawBtn = document.getElementById('withdrawBtn');
+  const countEl = document.getElementById('score-count');
+  const progress = document.getElementById('progress');
+  const errorMsg = document.getElementById('errorMsg');
 
-        withdrawBtn.addEventListener('click', () => {
-            if (!playerNick) return;
-            
-            withdrawBtn.disabled = true; 
-            withdrawBtn.innerText = "Отправка...";
-            
-            // Отправляем данные. Telegram сам закроет окно.
-            tg.sendData(JSON.stringify({ action: "withdraw", amount: 1 }));
-        });
-    </script>
+  if (playerNick) {
+    greetingEl.innerText = `Привет, "${playerNick}"`;
+  } else {
+    greetingEl.innerText = "Ошибка: нет ника";
+    clickBtn.disabled = true;
+  }
+
+  let clicks = 0; 
+  const TARGET = 50;
+  let lastClickTime = 0;
+  let isBlocked = false;
+
+  clickBtn.addEventListener('click', () => {
+    if (!playerNick) return;
+    if (clicks >= TARGET) return;
+
+    const now = Date.now();
+    const timeDiff = now - lastClickTime;
+
+    // Антикликер
+    if (lastClickTime !== 0 && timeDiff < 30) {
+      if (!isBlocked) {
+          isBlocked = true;
+          errorMsg.style.opacity = '1';
+          
+          clickBtn.classList.add('shake');
+          setTimeout(() => { clickBtn.classList.remove('shake'); }, 300);
+
+          setTimeout(() => {
+              errorMsg.style.opacity = '0';
+              isBlocked = false;
+          }, 1000);
+      }
+      return; 
+    }
+
+    lastClickTime = now;
+    clicks++;
+    
+    countEl.innerText = clicks;
+    progress.style.width = `${(clicks / TARGET) * 100}%`;
+
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+    if (clicks >= TARGET) { 
+      clickBtn.disabled = true; 
+      clickBtn.innerText = "ГОТОВО";
+      withdrawBtn.disabled = false; 
+    }
+  });
+
+  withdrawBtn.addEventListener('click', () => {
+    if (!playerNick) return;
+    
+    withdrawBtn.disabled = true; 
+    withdrawBtn.innerText = "ОТПРАВКА...";
+    
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+    // Отправляем данные в бота
+    tg.sendData(JSON.stringify({ action: "withdraw", amount: 1 }));
+  });
+</script>
 </body>
 </html>
