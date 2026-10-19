@@ -2,11 +2,10 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Кубик Кликер</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Cubic Battle 4</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  /* Подключаем шрифт из репозитория через надежный CDN */
   @font-face {
     font-family: 'Comic Relief';
     src: url('https://cdn.jsdelivr.net/gh/andreibioazum-cell/C-Larp@main/assets/fonts/ComicRelief-Regular.ttf') format('truetype');
@@ -14,131 +13,92 @@
     font-style: normal;
   }
 
-  :root {
-    --bg-gradient: linear-gradient(180deg, #2b0b2e 0%, #150517 100%);
-    --btn-gradient: linear-gradient(180deg, #e8437b 0%, #a91c4f 100%);
-    --btn-active: linear-gradient(180deg, #c93467 0%, #82123a 100%);
-    --text-main: #ffffff;
-    --text-dim: #d1c4d6;
-  }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
-    font-family: 'Comic Relief', 'Montserrat', sans-serif;
-    background: var(--bg-gradient);
-    color: var(--text-main);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 40px 20px;
-    user-select: none;
-    -webkit-user-select: none;
+  html, body {
+    background-color: #380d26; 
+    height: 100vh;
+    width: 100vw;
     overflow: hidden;
   }
 
-  /* Верхняя часть (Приветствие) */
-  .header {
-    text-align: center;
-    margin-top: 10px;
+  body {
+    font-family: 'Comic Relief', sans-serif;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0 calc(20px + env(safe-area-inset-bottom));
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
   }
 
   .greeting {
     font-size: 16px;
-    color: var(--text-dim);
-    margin-bottom: 5px;
-  }
-
-  /* Центральная часть */
-  .main-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 300px;
-    gap: 15px;
-    margin-top: -30px;
-  }
-
-  h1 {
-    font-size: 36px;
+    color: #ffffff;
     text-align: center;
-    margin-bottom: 20px;
-    text-shadow: 0 0 15px rgba(232, 67, 123, 0.5);
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  .title-container {
+    margin-top: 40px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .title {
+    font-size: 32px;
+    font-weight: normal;
     letter-spacing: 1px;
   }
 
-  .btn {
+  .menu-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; 
     width: 100%;
-    padding: 16px;
-    /* Обрезанные (скругленные) углы, как на скрине */
-    border-radius: 16px; 
-    border: none;
-    background: var(--btn-gradient);
+    padding-left: 12%; 
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .btn {
+    width: 65%; 
+    max-width: 280px;
+    padding: 12px 25px; 
+    text-align: left; 
+    background-color: #d94b7b; 
     color: white;
     font-family: inherit;
-    font-size: 24px;
+    font-size: 22px;
+    border: none;
+    border-radius: 12px;
     cursor: pointer;
-    /* Тень как у объемных кнопок в игре */
-    box-shadow: 0 6px 0 #5c0b29, 0 10px 15px rgba(0,0,0,0.5);
-    transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
-    text-align: center;
+    transition: transform 0.1s, background-color 0.1s;
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Эффект нажатия (кнопка падает вниз) */
   .btn:active:not(:disabled) {
-    transform: translateY(4px);
-    background: var(--btn-active);
-    box-shadow: 0 2px 0 #5c0b29, 0 4px 8px rgba(0,0,0,0.5);
+    transform: scale(0.96);
+    background-color: #c43c6a;
   }
 
   .btn:disabled {
-    background: #3a1c3d;
-    color: #7b6480;
-    box-shadow: 0 6px 0 #1f0c21, 0 10px 15px rgba(0,0,0,0.5);
+    background-color: #6e2545;
+    color: #b58b9c;
     cursor: not-allowed;
     transform: none;
   }
 
-  /* Нижняя часть (Прогресс и счетчик) */
   .footer {
+    position: absolute;
+    bottom: 30px;
     text-align: center;
     width: 100%;
-    max-width: 300px;
-    margin-bottom: 10px;
-  }
-
-  .progress-container {
-    width: 100%;
-    height: 12px;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 15px;
-    box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  
-  .progress-fill {
-    height: 100%;
-    background: #e8437b;
-    width: 0%;
-    border-radius: 5px;
-    transition: width 0.1s linear;
-    box-shadow: 0 0 10px rgba(232, 67, 123, 0.8);
-  }
-
-  .stats {
     font-size: 18px;
-    color: var(--text-dim);
-  }
-  
-  .stats span {
-    color: #fff;
-    font-weight: bold;
+    color: #ffffff;
   }
 
   .error-text {
@@ -147,7 +107,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
     color: #ff4d4d;
-    font-size: 20px;
+    font-size: 18px;
     text-align: center;
     background: rgba(0,0,0,0.8);
     padding: 15px;
@@ -158,32 +118,28 @@
   }
 
   @keyframes shake {
-    0% { transform: translateX(0); }
+    0%,100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
-    50% { transform: translateX(5px); }
-    75% { transform: translateX(-5px); }
-    100% { transform: translateX(0); }
+    75% { transform: translateX(5px); }
   }
   .shake { animation: shake 0.3s ease-in-out; }
 </style>
 </head>
 <body>
 
-  <div class="header">
-    <div class="greeting" id="greeting">Привет, Игрок</div>
+  <div class="greeting" id="greeting">Привет, Игрок</div>
+
+  <div class="title-container">
+    <h1 class="title">Cubic Battle 4</h1>
   </div>
 
-  <div class="main-content">
-    <h1>Кубик Кликер</h1>
+  <div class="menu-container">
     <button class="btn" id="clickBtn">КЛИКНУТЬ</button>
     <button class="btn" id="withdrawBtn" disabled>ЗАБРАТЬ</button>
   </div>
 
-  <div class="footer">
-    <div class="progress-container">
-      <div class="progress-fill" id="progress"></div>
-    </div>
-    <div class="stats">Клики: <span id="score-count">0</span> / 50</div>
+  <div class="footer" id="footer">
+    Кубки: <span id="cups-count">0</span>
   </div>
 
   <div class="error-text" id="errorMsg">⚠️ Не так быстро!</div>
@@ -193,18 +149,26 @@
   tg.expand(); 
   tg.ready(); 
 
+  // Красим верх и низ в цвет фона
+  const bgColor = '#380d26';
+  tg.setHeaderColor(bgColor);
+  tg.setBackgroundColor(bgColor);
+  if (tg.setBottomBarColor) tg.setBottomBarColor(bgColor);
+
   const urlParams = new URLSearchParams(window.location.search);
   const playerNick = urlParams.get('nick');
+  // Бот передает кубки в ссылке, берем их отсюда
+  let currentCups = parseInt(urlParams.get('cups')) || 0; 
   
   const greetingEl = document.getElementById('greeting');
   const clickBtn = document.getElementById('clickBtn');
   const withdrawBtn = document.getElementById('withdrawBtn');
-  const countEl = document.getElementById('score-count');
-  const progress = document.getElementById('progress');
+  const cupsCountEl = document.getElementById('cups-count');
   const errorMsg = document.getElementById('errorMsg');
 
   if (playerNick) {
     greetingEl.innerText = `Привет, "${playerNick}"`;
+    cupsCountEl.innerText = currentCups;
   } else {
     greetingEl.innerText = "Ошибка: нет ника";
     clickBtn.disabled = true;
@@ -216,34 +180,23 @@
   let isBlocked = false;
 
   clickBtn.addEventListener('click', () => {
-    if (!playerNick) return;
-    if (clicks >= TARGET) return;
+    if (!playerNick || clicks >= TARGET) return;
 
     const now = Date.now();
-    const timeDiff = now - lastClickTime;
-
-    // Антикликер
-    if (lastClickTime !== 0 && timeDiff < 30) {
+    if (lastClickTime !== 0 && now - lastClickTime < 30) {
       if (!isBlocked) {
           isBlocked = true;
           errorMsg.style.opacity = '1';
-          
           clickBtn.classList.add('shake');
-          setTimeout(() => { clickBtn.classList.remove('shake'); }, 300);
-
-          setTimeout(() => {
-              errorMsg.style.opacity = '0';
-              isBlocked = false;
-          }, 1000);
+          setTimeout(() => clickBtn.classList.remove('shake'), 300);
+          setTimeout(() => { errorMsg.style.opacity = '0'; isBlocked = false; }, 1000);
       }
       return; 
     }
 
     lastClickTime = now;
     clicks++;
-    
-    countEl.innerText = clicks;
-    progress.style.width = `${(clicks / TARGET) * 100}%`;
+    clickBtn.innerText = `КЛИКНУТЬ (${clicks}/${TARGET})`;
 
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
@@ -262,8 +215,21 @@
     
     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
-    // Отправляем данные в бота
+    // Визуально прибавляем кубок
+    currentCups++;
+    cupsCountEl.innerText = currentCups;
+
+    // Отправляем данные в бота (бот закроет окно сам)
     tg.sendData(JSON.stringify({ action: "withdraw", amount: 1 }));
+
+    // Сбрасываем кнопки для следующей игры
+    setTimeout(() => {
+        withdrawBtn.innerText = "ЗАБРАТЬ";
+        clickBtn.innerText = "КЛИКНУТЬ";
+        clickBtn.disabled = false;
+        clicks = 0;
+        withdrawBtn.disabled = true;
+    }, 1000);
   });
 </script>
 </body>
