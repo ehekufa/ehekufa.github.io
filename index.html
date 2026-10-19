@@ -13,8 +13,8 @@
     font-style: normal;
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: none; }
+  
   html, body {
     background-color: #380d26; 
     height: 100vh;
@@ -25,131 +25,126 @@
   body {
     font-family: 'Comic Relief', sans-serif;
     color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px 0 calc(20px + env(safe-area-inset-bottom));
-    user-select: none;
-    -webkit-user-select: none;
     position: relative;
   }
 
-  .greeting {
-    font-size: 16px;
-    color: #ffffff;
-    text-align: center;
-    margin-top: 10px;
-    width: 100%;
-  }
-
-  .title-container {
-    margin-top: 40px;
-    width: 100%;
-    text-align: center;
-  }
-
-  .title {
-    font-size: 32px;
-    font-weight: normal;
-    letter-spacing: 1px;
-  }
-
-  .menu-container {
+  /* ================= ГЛАВНОЕ МЕНЮ (КЛИКЕР) ================= */
+  #menu-screen {
     display: flex;
     flex-direction: column;
-    align-items: flex-start; 
-    width: 100%;
-    padding-left: 12%; 
-    margin-top: 30px;
-    gap: 12px;
+    align-items: center;
+    height: 100%;
+    padding: 20px 0 calc(20px + env(safe-area-inset-bottom));
+    position: absolute;
+    top: 0; left: 0; width: 100%;
+    transition: opacity 0.3s;
+  }
+
+  .greeting { font-size: 16px; text-align: center; margin-top: 10px; width: 100%; }
+  .title-container { margin-top: 40px; width: 100%; text-align: center; }
+  .title { font-size: 32px; font-weight: normal; letter-spacing: 1px; }
+
+  .menu-container {
+    display: flex; flex-direction: column; align-items: flex-start; 
+    width: 100%; padding-left: 12%; margin-top: 30px; gap: 12px;
   }
 
   .btn {
-    width: 65%; 
-    max-width: 280px;
-    padding: 12px 25px; 
-    text-align: left; 
-    background-color: #d94b7b; 
-    color: white;
-    font-family: inherit;
-    font-size: 22px;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: transform 0.1s, background-color 0.1s;
-    -webkit-tap-highlight-color: transparent;
+    width: 75%; max-width: 320px; padding: 12px 25px; text-align: left; 
+    background-color: #d94b7b; color: white; font-family: inherit; font-size: 20px;
+    border: none; border-radius: 12px; cursor: pointer;
+    transition: transform 0.1s, background-color 0.1s; -webkit-tap-highlight-color: transparent;
   }
+  .btn:active:not(:disabled) { transform: scale(0.96); background-color: #c43c6a; }
+  .btn:disabled { background-color: #6e2545; color: #b58b9c; cursor: not-allowed; transform: none; }
 
-  .btn:active:not(:disabled) {
-    transform: scale(0.96);
-    background-color: #c43c6a;
-  }
-
-  .btn:disabled {
-    background-color: #6e2545;
-    color: #b58b9c;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .footer {
-    position: absolute;
-    bottom: 30px;
-    text-align: center;
-    width: 100%;
-    font-size: 18px;
-    color: #ffffff;
-  }
-
+  .footer { position: absolute; bottom: 30px; text-align: center; width: 100%; font-size: 18px; }
   .error-text {
+    position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+    color: #ff4d4d; font-size: 18px; text-align: center; background: rgba(0,0,0,0.8);
+    padding: 15px; border-radius: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .shake { animation: shake 0.3s ease-in-out; }
+
+  /* ================= ДЕМО ИГРА ================= */
+  #game-screen {
+    display: none;
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #ff4d4d;
-    font-size: 18px;
-    text-align: center;
-    background: rgba(0,0,0,0.8);
-    padding: 15px;
-    border-radius: 12px;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: #1a1a2e;
+    z-index: 10;
   }
 
-  @keyframes shake {
-    0%,100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
+  .hp-bars { position: absolute; top: 20px; width: 100%; padding: 0 20px; display: flex; justify-content: space-between; z-index: 11; }
+  .hp-container { width: 40%; height: 20px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 2px solid #fff; position: relative; }
+  .hp-fill { height: 100%; border-radius: 8px; transition: width 0.2s; }
+  #player-hp { background-color: #2ecc71; width: 100%; }
+  #enemy-hp { background-color: #e74c3c; width: 100%; position: absolute; right: 0; top: 0; }
+
+  .ui-layer { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; z-index: 11; }
+  
+  .joystick-zone { width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; position: relative; border: 2px solid rgba(255,255,255,0.3); }
+  .joystick-knob { width: 50px; height: 50px; background: #3498db; border-radius: 50%; position: absolute; top: 35px; left: 35px; box-shadow: 0 0 10px #3498db; }
+  
+  .action-buttons { display: flex; flex-direction: column; gap: 15px; justify-content: flex-end; align-items: flex-end; }
+  .btn-action { width: 70px; height: 70px; border-radius: 50%; border: none; font-size: 14px; font-weight: bold; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 rgba(0,0,0,0.5); font-family: 'Comic Relief', sans-serif; }
+  .btn-action:active { transform: translateY(4px); box-shadow: none; }
+  #btn-attack { background-color: #e74c3c; }
+  #btn-shield { background-color: #f1c40f; color: #333; }
+  #btn-shield.active { background-color: #f39c12; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); transform: scale(0.9); }
+
+  #btn-back-menu {
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #d94b7b; color: white; padding: 8px 16px; border-radius: 8px; border: none;
+    font-family: inherit; font-size: 14px; z-index: 12;
   }
-  .shake { animation: shake 0.3s ease-in-out; }
+
+  canvas { position: absolute; top: 0; left: 0; z-index: 10; }
 </style>
 </head>
 <body>
 
-  <div class="greeting" id="greeting">Привет, Игрок</div>
+  <!-- ГЛАВНОЕ МЕНЮ -->
+  <div id="menu-screen">
+    <div class="greeting" id="greeting">Привет, Игрок</div>
+    <div class="title-container"><h1 class="title">Cubic Battle 4</h1></div>
+    
+    <div class="menu-container">
+      <button class="btn" id="clickBtn">КЛИКНУТЬ</button>
+      <button class="btn" id="withdrawBtn" disabled>ЗАБРАТЬ</button>
+      <!-- УБРАН СМАЙЛИК -->
+      <button class="btn" id="openGameBtn" style="background-color: #3498db; margin-top: 10px;">ДЕМО CUBIC BATTLE 4</button>
+    </div>
 
-  <div class="title-container">
-    <h1 class="title">Cubic Battle 4</h1>
+    <div class="footer" id="footer">Кубки: <span id="cups-count">0</span></div>
+    <div class="error-text" id="errorMsg">⚠️ Не так быстро!</div>
   </div>
 
-  <div class="menu-container">
-    <button class="btn" id="clickBtn">КЛИКНУТЬ</button>
-    <button class="btn" id="withdrawBtn" disabled>ЗАБРАТЬ</button>
+  <!-- ДЕМО ИГРА -->
+  <div id="game-screen">
+    <button id="btn-back-menu">В МЕНЮ</button>
+    <div class="hp-bars">
+        <div class="hp-container"><div id="player-hp" class="hp-fill"></div></div>
+        <div class="hp-container"><div id="enemy-hp" class="hp-fill"></div></div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div class="ui-layer">
+        <div class="joystick-zone" id="joystick-zone">
+            <div class="joystick-knob" id="joystick-knob"></div>
+        </div>
+        <div class="action-buttons">
+            <button class="btn-action" id="btn-shield">ЩИТ</button>
+            <button class="btn-action" id="btn-attack">УДАР</button>
+        </div>
+    </div>
   </div>
-
-  <div class="footer" id="footer">
-    Кубки: <span id="cups-count">0</span>
-  </div>
-
-  <div class="error-text" id="errorMsg">⚠️ Не так быстро!</div>
 
 <script>
   const tg = window.Telegram.WebApp;
   tg.expand(); 
   tg.ready(); 
 
-  // Красим верх и низ в цвет фона
   const bgColor = '#380d26';
   tg.setHeaderColor(bgColor);
   tg.setBackgroundColor(bgColor);
@@ -157,9 +152,9 @@
 
   const urlParams = new URLSearchParams(window.location.search);
   const playerNick = urlParams.get('nick');
-  // Бот передает кубки в ссылке, берем их отсюда
   let currentCups = parseInt(urlParams.get('cups')) || 0; 
-  
+
+  // ================= ЛОГИКА КЛИКЕРА =================
   const greetingEl = document.getElementById('greeting');
   const clickBtn = document.getElementById('clickBtn');
   const withdrawBtn = document.getElementById('withdrawBtn');
@@ -181,56 +176,208 @@
 
   clickBtn.addEventListener('click', () => {
     if (!playerNick || clicks >= TARGET) return;
-
     const now = Date.now();
     if (lastClickTime !== 0 && now - lastClickTime < 30) {
       if (!isBlocked) {
-          isBlocked = true;
-          errorMsg.style.opacity = '1';
+          isBlocked = true; errorMsg.style.opacity = '1';
           clickBtn.classList.add('shake');
           setTimeout(() => clickBtn.classList.remove('shake'), 300);
           setTimeout(() => { errorMsg.style.opacity = '0'; isBlocked = false; }, 1000);
       }
       return; 
     }
-
     lastClickTime = now;
     clicks++;
     clickBtn.innerText = `КЛИКНУТЬ (${clicks}/${TARGET})`;
-
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-
-    if (clicks >= TARGET) { 
-      clickBtn.disabled = true; 
-      clickBtn.innerText = "ГОТОВО";
-      withdrawBtn.disabled = false; 
-    }
+    if (clicks >= TARGET) { clickBtn.disabled = true; clickBtn.innerText = "ГОТОВО"; withdrawBtn.disabled = false; }
   });
 
   withdrawBtn.addEventListener('click', () => {
     if (!playerNick) return;
-    
-    withdrawBtn.disabled = true; 
-    withdrawBtn.innerText = "ОТПРАВКА...";
-    
+    withdrawBtn.disabled = true; withdrawBtn.innerText = "ОТПРАВКА...";
     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
-    // Визуально прибавляем кубок
-    currentCups++;
-    cupsCountEl.innerText = currentCups;
-
-    // Отправляем данные в бота (бот закроет окно сам)
     tg.sendData(JSON.stringify({ action: "withdraw", amount: 1 }));
-
-    // Сбрасываем кнопки для следующей игры
-    setTimeout(() => {
-        withdrawBtn.innerText = "ЗАБРАТЬ";
-        clickBtn.innerText = "КЛИКНУТЬ";
-        clickBtn.disabled = false;
-        clicks = 0;
-        withdrawBtn.disabled = true;
-    }, 1000);
   });
+
+  // ================= ЛОГИКА ДЕМО ИГРЫ =================
+  const menuScreen = document.getElementById('menu-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const openGameBtn = document.getElementById('openGameBtn');
+  const btnBackMenu = document.getElementById('btn-back-menu');
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  let gameLoopId;
+
+  function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+
+  const player = { x: 0, y: 0, radius: 20, hp: 10, maxHp: 10, speed: 3, shield: false };
+  const enemy = { x: 0, y: 0, radius: 20, hp: 10, maxHp: 10, speed: 1.5, shield: false, lastAttackTime: 0 };
+  let keys = { up: false, down: false, left: false, right: false };
+  let isGameOver = false;
+
+  // Открытие игры
+  openGameBtn.addEventListener('click', () => {
+      menuScreen.style.display = 'none';
+      gameScreen.style.display = 'block';
+      resize();
+      
+      // Сброс игры
+      player.x = canvas.width/2; player.y = canvas.height/2 + 100; player.hp = 10; player.shield = false;
+      enemy.x = canvas.width/2; enemy.y = canvas.height/2 - 100; enemy.hp = 10; enemy.shield = false;
+      isGameOver = false;
+      updateHP();
+      document.getElementById('btn-shield').classList.remove('active');
+      
+      gameLoop();
+  });
+
+  // Выход в меню
+  btnBackMenu.addEventListener('click', () => {
+      cancelAnimationFrame(gameLoopId);
+      gameScreen.style.display = 'none';
+      menuScreen.style.display = 'flex';
+  });
+
+  function dealDamage(target, attacker) {
+      let dmg = 1.0;
+      if (target.shield || attacker.shield) dmg = 0.1;
+      target.hp -= dmg;
+      if (target.hp <= 0) {
+          target.hp = 0;
+          if (target === enemy) endGame("ПОБЕДА!", "#2ecc71");
+          else endGame("ПОРАЖЕНИЕ...", "#e74c3c");
+      }
+      updateHP();
+  }
+
+  function updateHP() {
+      document.getElementById('player-hp').style.width = `${(player.hp / player.maxHp) * 100}%`;
+      document.getElementById('enemy-hp').style.width = `${(enemy.hp / enemy.maxHp) * 100}%`;
+  }
+
+  function endGame(text, color) {
+      isGameOver = true;
+      ctx.fillStyle = "rgba(0,0,0,0.8)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = color;
+      ctx.font = "bold 40px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(text, canvas.width/2, canvas.height/2);
+      
+      ctx.fillStyle = "#fff";
+      ctx.font = "20px sans-serif";
+      ctx.fillText("Это была демо-версия", canvas.width/2, canvas.height/2 + 40);
+  }
+
+  // Джойстик
+  const zone = document.getElementById('joystick-zone');
+  const knob = document.getElementById('joystick-knob');
+  let joyCenter = { x: 0, y: 0 };
+  let maxDist = 35;
+
+  zone.addEventListener('touchstart', (e) => { 
+      e.preventDefault(); 
+      const rect = zone.getBoundingClientRect();
+      joyCenter = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+  });
+  
+  zone.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      let dx = touch.clientX - joyCenter.x;
+      let dy = touch.clientY - joyCenter.y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      
+      if (dist > maxDist) {
+          dx = (dx / dist) * maxDist;
+          dy = (dy / dist) * maxDist;
+      }
+      
+      knob.style.transform = `translate(${dx}px, ${dy}px)`;
+      keys.right = dx > 5; keys.left = dx < -5;
+      keys.down = dy > 5; keys.up = dy < -5;
+  });
+
+  const resetJoystick = (e) => {
+      e.preventDefault();
+      knob.style.transform = `translate(0px, 0px)`;
+      keys = { up: false, down: false, left: false, right: false };
+  };
+  zone.addEventListener('touchend', resetJoystick);
+  zone.addEventListener('touchcancel', resetJoystick);
+
+  // Кнопки
+  document.getElementById('btn-shield').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      player.shield = !player.shield;
+      document.getElementById('btn-shield').classList.toggle('active', player.shield);
+  });
+
+  document.getElementById('btn-attack').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (isGameOver) return;
+      const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+      if (dist < player.radius + enemy.radius + 30) {
+          dealDamage(enemy, player);
+          player.x -= (enemy.x - player.x) * 0.1;
+          player.y -= (enemy.y - player.y) * 0.1;
+      }
+  });
+
+  // Игровой цикл
+  function update() {
+      if (isGameOver) return;
+      let currentSpeed = player.shield ? player.speed * 0.5 : player.speed;
+      if (keys.up) player.y -= currentSpeed;
+      if (keys.down) player.y += currentSpeed;
+      if (keys.left) player.x -= currentSpeed;
+      if (keys.right) player.x += currentSpeed;
+
+      player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+      player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+      const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+      enemy.x += Math.cos(angle) * enemy.speed;
+      enemy.y += Math.sin(angle) * enemy.speed;
+
+      const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+      if (dist < player.radius + enemy.radius + 5) {
+          const now = Date.now();
+          if (now - enemy.lastAttackTime > 1000) {
+              dealDamage(player, enemy);
+              enemy.lastAttackTime = now;
+          }
+      }
+  }
+
+  function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (isGameOver) return;
+
+      ctx.fillStyle = player.shield ? "#f1c40f" : "#3498db";
+      ctx.fillRect(player.x - player.radius, player.y - player.radius, player.radius*2, player.radius*2);
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
+      ctx.strokeRect(player.x - player.radius, player.y - player.radius, player.radius*2, player.radius*2);
+
+      ctx.fillStyle = enemy.shield ? "#f1c40f" : "#e74c3c";
+      ctx.fillRect(enemy.x - enemy.radius, enemy.y - enemy.radius, enemy.radius*2, enemy.radius*2);
+      ctx.strokeStyle = "#fff";
+      ctx.strokeRect(enemy.x - enemy.radius, enemy.y - enemy.radius, enemy.radius*2, enemy.radius*2);
+  }
+
+  function gameLoop() {
+      if (gameScreen.style.display === 'none') return;
+      update();
+      draw();
+      if (!isGameOver) gameLoopId = requestAnimationFrame(gameLoop);
+  }
 </script>
 </body>
 </html>
