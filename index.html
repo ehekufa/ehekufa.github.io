@@ -20,14 +20,18 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{
   margin:0;
-  background:radial-gradient(1.5px 1.5px at 12% 18%,#fff,transparent),radial-gradient(1.5px 1.5px at 88% 12%,#fff,transparent),radial-gradient(1px 1px at 70% 40%,#fff,transparent),radial-gradient(1px 1px at 25% 70%,#fff,transparent),radial-gradient(1.5px 1.5px at 92% 78%,#fff,transparent),radial-gradient(1px 1px at 8% 90%,#fff,transparent),var(--bg);
-  background-attachment:fixed;
+  background:var(--bg);
   color:var(--text);
   font-family:'Quicksand',system-ui,sans-serif;
   font-size:18px;
   line-height:1.6;
 }
-.wrap{max-width:1100px;margin:0 auto;padding:24px 20px 60px}
+#starfield{
+  position:fixed; top:0; left:0;
+  width:100vw; height:100vh; height:100dvh;
+  display:block; z-index:0; pointer-events:none;
+}
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:24px 20px 60px}
 a{color:var(--text)}
 header{position:relative;display:flex;gap:28px;align-items:center;padding-top:60px}
 .bubble{position:absolute;left:70px;top:0;background:var(--bubble);color:#fff;font-size:30px;padding:8px 22px 14px;transform:rotate(-4deg);border-radius:3px;font-weight:500}
@@ -50,6 +54,26 @@ h2 svg [stroke="#1c4b66"]{stroke:var(--head)}
 h4{color:var(--sub);letter-spacing:.1em;font-size:20px;margin:24px 0 8px 24px;font-weight:700}
 pre{margin:0;background:var(--box);border:1px solid #2c1f4d;padding:22px 48px;font-family:'Noto Sans Mono','DejaVu Sans Mono',Consolas,monospace;font-size:20px;line-height:1.4;color:var(--head);border-radius:36px 14px 40px 20px/30px 40px 20px 36px;overflow-x:auto}
 .k{font-weight:700}.f{color:var(--pink);font-weight:700}.s{color:var(--green)}.n{color:var(--blue)}
+
+.download-btn{
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--accent);color:#0b0016;
+  font:700 18px/1 'Quicksand',system-ui,sans-serif;
+  padding:14px 26px;border-radius:16px;
+  border:none;cursor:pointer;
+  margin:6px 0 18px;
+  box-shadow:0 4px 0 #6a45c4;
+  transition:transform .08s ease, box-shadow .08s ease;
+}
+.download-btn:hover{transform:translateY(-1px);box-shadow:0 5px 0 #6a45c4}
+.download-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #6a45c4}
+.download-btn:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:0 4px 0 #6a45c4}
+.download-btn svg{width:20px;height:20px;flex:none}
+.download-btn .filename{
+  font-family:'Noto Sans Mono','DejaVu Sans Mono',Consolas,monospace;
+  font-weight:500;font-size:16px;opacity:.85;
+}
+
 @media(max-width:720px){
   header{flex-direction:column;align-items:flex-start;padding-top:70px}
   .bubble{left:20px}.nav{top:8px}
@@ -60,6 +84,7 @@ pre{margin:0;background:var(--box);border:1px solid #2c1f4d;padding:22px 48px;fo
 </style>
 </head>
 <body>
+<canvas id="starfield" aria-hidden="true"></canvas>
 <div class="wrap">
   <header>
     <div class="bubble">LuaC <svg viewBox="0 0 24 24" style="width:.9em;height:.9em;vertical-align:-.08em" aria-label="open"><rect x="4" y="11" width="16" height="10" rx="2.500" fill="currentColor"></rect><path d="M8 11V7.500a4 4 0 0 1 7.700-1.500" fill="none" stroke="currentColor" stroke-width="2.400" stroke-linecap="round"></path></svg></div>
@@ -111,8 +136,418 @@ pre{margin:0;background:var(--box);border:1px solid #2c1f4d;padding:22px 48px;fo
 <span class="k">cd</span> LuaC</pre>
     <h4>Switching to the branch</h4>
 <pre><span class="k">git</span> checkout <span class="s">arena/b210b158-luac</span></pre>
+
+    <h4>Example file</h4>
+    <p>Download a ready-made example to play with:</p>
+    <button type="button" class="download-btn" id="download-pingpong">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 20h14"
+              fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Download <span class="filename">ping pong.json</span>
+    </button>
+
     <p>See the <a href="https://github.com/ehekufa/LuaC">repository</a> for the full documentation.</p>
   </section>
 </div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  var TIME_SCALE = 10;                    // 1000% — всё в 10 раз быстрее
+  var BOOM_DUR   = 0.4 * TIME_SCALE;      // длительность вспышки
+  var SUCK_MAX   = 2.5 * TIME_SCALE;      // максимум времени засасывания
+  var STAR_COUNT = window.innerWidth < 720 ? 60 : 120;
+  var DISK_DOTS  = 44;                    // точек аккреционного диска
+  var DISK_SPEED = 1.2;                   // скорость вращения диска
+  var STEPS      = 4;                     // физических подшагов в кадре
+
+  // ============================================================
+  // CANVAS SETUP
+  // ============================================================
+  var canvas = document.getElementById('starfield');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var W = 0, H = 0, DPR = 1;
+  function setCanvasSize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width  = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  setCanvasSize();
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  // ============================================================
+  // BLACK HOLE (логотип)
+  // ============================================================
+  var logo = document.querySelector('.logo');
+  function getHole() {
+    if (!logo) return { x: W/2, y: H/2, r: 62, visible: false };
+    var rect = logo.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+      r: Math.min(rect.width, rect.height) / 2 || 62,
+      visible: rect.bottom > -200 && rect.top < H + 200 &&
+               rect.right > -200 && rect.left < W + 200
+    };
+  }
+
+  // ============================================================
+  // STARS
+  // ============================================================
+  var IDLE = 0, BOOM = 1, SUCK = 2;
+
+  function newStar() {
+    var hole = getHole();
+    var x, y, t = 0;
+    do {
+      x = rand(0, W);
+      y = rand(0, H);
+      t++;
+    } while (t < 30 && Math.hypot(x - hole.x, y - hole.y) < hole.r * 2.5);
+
+    return {
+      x: x, y: y,
+      r: rand(0.9, 1.7),
+      baseAlpha: rand(0.6, 1),
+      alpha: 1,
+      spawnFade: 0,
+      twinklePhase: Math.random() * Math.PI * 2,
+      twinkleSpeed: rand(0.3, 0.9),
+      state: IDLE,
+      stateT: 0,
+      nextBoom: rand(1.0, 3.0) * TIME_SCALE,
+      vx: 0, vy: 0,
+      scale: 1
+    };
+  }
+
+  var stars = [];
+  for (var i = 0; i < STAR_COUNT; i++) {
+    var s = newStar();
+    s.nextBoom = rand(0.2, 4) * TIME_SCALE;
+    s.spawnFade = 1;
+    stars.push(s);
+  }
+
+  // ============================================================
+  // PARTICLES
+  // ============================================================
+  var particles = [];
+  function spawnBurst(x, y, n) {
+    for (var i = 0; i < n; i++) {
+      var a = Math.random() * Math.PI * 2;
+      var sp = rand(100, 280);
+      particles.push({
+        x: x, y: y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        life: rand(0.6, 1.2) * TIME_SCALE,
+        maxLife: 1.2 * TIME_SCALE,
+        r: rand(0.6, 1.5)
+      });
+    }
+  }
+
+  // ============================================================
+  // ACCRETION DISK (вращающиеся точки вокруг дыры)
+  // ============================================================
+  var diskAngle = 0;
+  var diskDots = [];
+  for (var i = 0; i < DISK_DOTS; i++) {
+    diskDots.push({
+      angle: (i / DISK_DOTS) * Math.PI * 2 + rand(-0.15, 0.15),
+      radiusMul: rand(1.15, 1.95),
+      size: rand(0.6, 1.5),
+      speed: rand(0.6, 1.4),
+      alpha: rand(0.25, 0.85)
+    });
+  }
+
+  // ============================================================
+  // UPDATE
+  // ============================================================
+  function updateStar(s, dt, hole) {
+    s.stateT += dt;
+    s.spawnFade = Math.min(1, s.spawnFade + dt * 2);
+
+    if (s.state === IDLE) {
+      s.twinklePhase += s.twinkleSpeed * dt;
+      s.alpha = s.baseAlpha * (0.55 + 0.45 * Math.sin(s.twinklePhase)) * s.spawnFade;
+      s.scale = 1;
+
+      if (s.stateT > s.nextBoom && hole.visible) {
+        s.state = BOOM;
+        s.stateT = 0;
+        spawnBurst(s.x, s.y, 20);
+      }
+
+    } else if (s.state === BOOM) {
+      var tb = Math.min(1, s.stateT / BOOM_DUR);
+
+      var fadeStart = 0.15;
+      if (tb < fadeStart) {
+        s.alpha = 1;
+      } else {
+        var tt = (tb - fadeStart) / (1 - fadeStart);
+        s.alpha = Math.pow(1 - tt, 1.3);
+      }
+
+      s.scale = 1 + tb * 7;
+
+      if (s.stateT >= BOOM_DUR) {
+        s.state = SUCK;
+        s.stateT = 0;
+
+        var dx0 = hole.x - s.x, dy0 = hole.y - s.y;
+        var d0 = Math.hypot(dx0, dy0) || 1;
+        var ts = rand(100, 200);
+        s.vx = (-dy0 / d0) * ts;
+        s.vy = ( dx0 / d0) * ts;
+      }
+
+    } else if (s.state === SUCK) {
+      var dx = hole.x - s.x, dy = hole.y - s.y;
+      var d  = Math.hypot(dx, dy) || 1;
+
+      var acc = 600 + 4000 * (1 - Math.min(d / 500, 1));
+      s.vx += (dx / d) * acc * dt;
+      s.vy += (dy / d) * acc * dt;
+
+      var rotAcc = 1500 * Math.min(1, d / 350);
+      s.vx += (-dy / d) * rotAcc * dt;
+      s.vy += ( dx / d) * rotAcc * dt;
+
+      s.vx *= (1 - 0.4 * dt);
+      s.vy *= (1 - 0.4 * dt);
+
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+
+      var t = Math.max(0, Math.min(1, 1 - (d - hole.r) / (hole.r * 6)));
+      s.alpha = (1 - t * t) * s.spawnFade;
+      s.scale = Math.max(0.1, 1 - t * 0.85);
+
+      if (d < hole.r * 0.7 || s.alpha < 0.03 || s.stateT > SUCK_MAX) {
+        var ns = newStar();
+        s.x = ns.x; s.y = ns.y;
+        s.r = ns.r; s.baseAlpha = ns.baseAlpha; s.alpha = 1;
+        s.spawnFade = 0;
+        s.twinklePhase = ns.twinklePhase;
+        s.twinkleSpeed = ns.twinkleSpeed;
+        s.state = IDLE; s.stateT = 0;
+        s.nextBoom = ns.nextBoom;
+        s.vx = 0; s.vy = 0;
+        s.scale = 1;
+      }
+    }
+  }
+
+  function updateDisk(dt) {
+    diskAngle += dt * DISK_SPEED;
+  }
+
+  function updateParticles(dt, hole) {
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.life -= dt;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      var dx = hole.x - p.x, dy = hole.y - p.y;
+      var d = Math.hypot(dx, dy) || 1;
+      p.vx += (dx / d) * 300 * dt;
+      p.vy += (dy / d) * 300 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+    }
+  }
+
+  // ============================================================
+  // DRAW
+  // ============================================================
+  function drawAccretionDisk(hole) {
+    if (!hole.visible) return;
+    for (var i = 0; i < diskDots.length; i++) {
+      var d = diskDots[i];
+      var a = d.angle + diskAngle * d.speed;
+
+      var rx = hole.r * d.radiusMul;
+      var ry = hole.r * d.radiusMul * 0.55;
+      var x = hole.x + Math.cos(a) * rx;
+      var y = hole.y + Math.sin(a) * ry;
+
+      var depth = (Math.sin(a) + 1) / 2;
+      var aAlpha = d.alpha * (0.25 + depth * 0.75);
+
+      ctx.globalAlpha = aAlpha;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(x, y, d.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawStar(s) {
+    if (s.alpha <= 0.02) return;
+    var r = s.r * s.scale;
+    if (r < 0.15) return;
+
+    if (s.state === SUCK) {
+      var speed = Math.hypot(s.vx, s.vy);
+      var len = Math.min(100, speed * 0.055);
+      if (len > 1) {
+        var inv = 1 / (speed || 1);
+        ctx.globalAlpha = s.alpha * 0.5;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = Math.max(0.4, r * 0.7);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(s.x - s.vx * inv * len, s.y - s.vy * inv * len);
+        ctx.lineTo(s.x, s.y);
+        ctx.stroke();
+      }
+    }
+
+    ctx.globalAlpha = Math.min(1, s.alpha * 1.2);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (s.state === BOOM) {
+      var tb = Math.min(1, s.stateT / BOOM_DUR);
+      var ringR = r * 1.5 + tb * 55;
+      ctx.globalAlpha = (1 - tb) * 0.95;
+      ctx.fillStyle = '#fff';
+      var dots = 16;
+      for (var k = 0; k < dots; k++) {
+        var ang = (k / dots) * Math.PI * 2 + tb * 4;
+        ctx.beginPath();
+        ctx.arc(s.x + Math.cos(ang) * ringR,
+                s.y + Math.sin(ang) * ringR,
+                1.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.globalAlpha = 1;
+  }
+
+  function drawParticle(p) {
+    var a = Math.max(0, p.life / p.maxLife);
+    if (a <= 0.02) return;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // ============================================================
+  // LOOP
+  // ============================================================
+  var lastT = performance.now();
+
+  function frame(now) {
+    var rawDt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+
+    var hole = getHole();
+    var totalDt = rawDt * TIME_SCALE;
+    var subDt = totalDt / STEPS;
+
+    for (var k = 0; k < STEPS; k++) {
+      updateDisk(subDt);
+      updateParticles(subDt, hole);
+      for (var i = 0; i < stars.length; i++) {
+        updateStar(stars[i], subDt, hole);
+      }
+    }
+
+    ctx.clearRect(0, 0, W, H);
+    drawAccretionDisk(hole);
+    for (var i = 0; i < particles.length; i++) drawParticle(particles[i]);
+    for (var i = 0; i < stars.length; i++) drawStar(stars[i]);
+
+    requestAnimationFrame(frame);
+  }
+
+  function drawStatic() {
+    ctx.clearRect(0, 0, W, H);
+    var hole = getHole();
+    drawAccretionDisk(hole);
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      s.alpha = s.baseAlpha;
+      s.scale = 1;
+      s.spawnFade = 1;
+      drawStar(s);
+    }
+  }
+
+  function onResize() {
+    setCanvasSize();
+    if (reduceMotion) { drawStatic(); return; }
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      if (s.x < 0 || s.x > W || s.y < 0 || s.y > H) {
+        s.x = rand(0, W);
+        s.y = rand(0, H);
+      }
+    }
+  }
+  window.addEventListener('resize', onResize);
+
+  if (reduceMotion) drawStatic();
+  else requestAnimationFrame(frame);
+
+  // ============================================================
+  // DOWNLOAD BUTTON
+  // ============================================================
+  var btn = document.getElementById('download-pingpong');
+  if (btn) {
+    var FILE_URL = 'https://raw.githubusercontent.com/ehekufa/ehekufa.github.io/main/ping%20pong.json';
+    btn.addEventListener('click', function () {
+      btn.disabled = true;
+      fetch(FILE_URL)
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.blob();
+        })
+        .then(function (blob) {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'ping pong.json';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 100);
+        })
+        .catch(function (e) {
+          console.error('Download failed:', e);
+          alert('Не удалось скачать файл. Проверьте подключение к интернету.');
+        })
+        .finally(function () { btn.disabled = false; });
+    });
+  }
+
+})();
+</script>
 </body>
 </html>
